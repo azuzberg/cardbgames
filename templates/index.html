@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#204f43" />
+    <meta
+      name="description"
+      content="Лист — уютная карточная игра против бота. Собирайте комбинации, считайте очки и играйте до 21."
+    />
+    <title>Лист — карточная игра</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23204f43'/%3E%3Ctext x='32' y='48' text-anchor='middle' font-size='50' fill='%23eacb85'%3E♣%3C/text%3E%3C/svg%3E"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body data-view="loading">
+    <div class="loading-screen" id="loading-screen">
+      <span class="brand-symbol">♣</span>
+      <p>Готовим карточный стол…</p>
+    </div>
+    <header class="site-header">
+      <button
+        class="brand"
+        id="brand-home"
+        aria-label="Лист — вернуться в лобби"
+      >
+        <span class="brand-symbol">♣</span
+        ><span>лист<span class="brand-dot">.</span></span>
+      </button>
+      <div class="header-game-info" id="header-game-info" hidden>
+        <span class="round-chip" id="round-chip"></span>
+        <div class="scoreboard" aria-label="Счёт матча">
+          <span>Вы</span><strong id="player-score">0</strong
+          ><span class="score-divider">:</span><strong id="bot-score">0</strong
+          ><span>Бот</span><span class="score-target">до 21</span>
+        </div>
+      </div>
+      <nav class="header-actions" aria-label="Навигация">
+        <button class="text-button" id="lobby-button" hidden>Лобби</button
+        ><button class="text-button rules-trigger">
+          <span aria-hidden="true">ⓘ</span> Правила игры
+        </button>
+      </nav>
+    </header>
+
+    <main id="lobby-view" class="lobby-view" hidden>
+      <section class="lobby-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">
+            <span class="small-star">✦</span> Время для хорошей партии
+          </p>
+          <h1>Каждая карта<br />имеет <em>значение.</em></h1>
+          <p class="hero-description">
+            Собирайте комбинации, забирайте взятки<br class="desktop-break" />
+            и первым наберите 21 очко. Ваш ход.
+          </p>
+          <div class="hero-tags">
+            <span>52 карты</span><span>4 карты на руке</span
+            ><span>До 21 очка</span>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="art-circle"></div>
+          <div class="art-ring"></div>
+          <span class="art-star star-one">✦</span
+          ><span class="art-star star-two">✧</span
+          ><span class="art-label"
+            >ПРОСТЫЕ ПРАВИЛА.<br />КРАСИВЫЕ КОМБИНАЦИИ.</span
+          >
+          <div class="hero-card hero-card-one">
+            <span class="art-corner">2<br />♣</span
+            ><span class="art-suit">♣</span
+            ><span class="art-corner bottom">2<br />♣</span>
+          </div>
+          <div class="hero-card hero-card-two">
+            <span class="art-corner red">10<br />♦</span
+            ><span class="art-suit red">♦</span
+            ><span class="art-corner red bottom">10<br />♦</span
+            ><span class="art-bonus">+1 очко</span>
+          </div>
+          <div class="hero-card hero-card-three">
+            <span class="art-corner">Т<br />♠</span
+            ><span class="art-suit">♠</span
+            ><span class="art-corner bottom">Т<br />♠</span>
+          </div>
+          <span class="art-caption">МАЛЕНЬКИЕ КАРТЫ. БОЛЬШАЯ ИГРА.</span>
+        </div>
+      </section>
+      <section class="lobby-bottom" aria-label="Выбор игры">
+        <div class="mode-panel">
+          <div class="section-title">
+            <h2>С кем сыграем?</h2>
+            <span class="quiet-label">Выбор режима</span>
+          </div>
+          <div class="mode-card">
+            <div class="bot-avatar">
+              <span aria-hidden="true">♟</span
+              ><span class="avatar-status"></span>
+            </div>
+            <div class="mode-copy">
+              <h3>Вы против бота</h3>
+              <p>Один на один. Без спешки.</p>
+              <span class="mode-label">Бот готов к игре</span>
+            </div>
+            <span class="mode-check" aria-label="Режим выбран">✓</span>
+          </div>
+          <button class="primary-button start-button" id="start-game">
+            Начать игру <span aria-hidden="true">→</span></button
+          ><button class="resume-button" id="resume-game" hidden>
+            Продолжить текущую партию <span aria-hidden="true">→</span>
+          </button>
+          <p class="mode-footnote">
+            Без регистрации · Прогресс сохраняется автоматически
+          </p>
+        </div>
+        <aside class="points-panel">
+          <span class="eyebrow">Маленькая подсказка</span>
+          <h2>За что дают очки?</h2>
+          <div class="point-row">
+            <span class="point-icon">▤</span><span>Больше всех карт</span
+            ><strong>2 очка</strong>
+          </div>
+          <div class="point-row">
+            <span class="point-icon club-icon">♣</span><span>Больше треф</span
+            ><strong>1 очко</strong>
+          </div>
+          <div class="point-row">
+            <span class="point-mini">2♣</span><span>Двойка треф</span
+            ><strong>1 очко</strong>
+          </div>
+          <div class="point-row">
+            <span class="point-mini red">10♦</span><span>Десятка бубен</span
+            ><strong>1 очко</strong>
+          </div>
+          <button class="inline-link rules-trigger">
+            Все правила <span aria-hidden="true">→</span>
+          </button>
+        </aside>
+      </section>
+      <section class="history-section" id="history-section">
+        <div class="section-title">
+          <h2>Ваши партии</h2>
+          <div class="stats-summary" id="stats-summary"></div>
+        </div>
+        <div id="history-list" class="history-list">
+          <p class="empty-history">
+            Первая история начинается с первой партии.
+          </p>
+        </div>
+      </section>
+      <footer class="lobby-footer">
+        <span
+          >лист.
+          <span class="footer-suits" aria-hidden="true">♠ ♥ ♣ ♦</span></span
+        ><span>Немного тактики. Немного удачи.</span>
+      </footer>
+    </main>
+
+    <main id="game-view" class="game-view" hidden>
+      <section class="game-board" aria-label="Карточный стол" id="game-board">
+        <div class="board-grain" aria-hidden="true"></div>
+        <div class="opponent-zone">
+          <div class="seat-label">
+            <span class="seat-avatar" aria-hidden="true">♟</span>
+            <div>
+              <strong>Бот</strong><span id="bot-status">Ваш соперник</span>
+            </div>
+            <span class="dealer-badge" id="bot-dealer" hidden>Сдаёт</span
+            ><span
+              class="turn-dot"
+              id="bot-turn-dot"
+              hidden
+              aria-label="Ход бота"
+            ></span>
+          </div>
+          <div class="bot-hand" id="bot-hand" aria-label="Карты бота"></div>
+        </div>
+        <aside class="deck-zone">
+          <div class="deck-stack card-back" id="deck-stack" aria-label="Колода">
+            <span class="back-emblem" aria-hidden="true">✦</span>
+          </div>
+          <span class="deck-label">Колода</span
+          ><strong id="deck-count">40</strong>
+        </aside>
+        <div class="center-zone">
+          <div class="table-label">
+            <span class="table-line"></span><span>Общий стол</span
+            ><span class="table-line"></span>
+          </div>
+          <div
+            class="table-cards"
+            id="table-cards"
+            aria-label="Карты на столе"
+          ></div>
+          <div class="empty-table" id="empty-table" hidden>
+            <span aria-hidden="true">♣</span>
+            <p>Стол свободен</p>
+          </div>
+          <p class="table-caption" id="table-caption">
+            Выберите карту на руке, затем карты на столе
+          </p>
+        </div>
+        <aside class="capture-zone" aria-label="Взятки">
+          <div class="capture-pile" id="bot-capture">
+            <span class="capture-label">Взятки бота</span>
+            <div class="small-back card-back" id="bot-pile">
+              <span class="back-emblem" aria-hidden="true">✦</span>
+            </div>
+            <strong id="bot-captured-count">0 <span>карт</span></strong
+            ><span class="capture-clubs" id="bot-captured-clubs">♣ 0</span>
+          </div>
+          <div class="capture-pile" id="player-capture">
+            <span class="capture-label">Ваши взятки</span>
+            <div class="small-back card-back" id="player-pile">
+              <span class="back-emblem" aria-hidden="true">✦</span>
+            </div>
+            <strong id="player-captured-count">0 <span>карт</span></strong
+            ><span class="capture-clubs" id="player-captured-clubs">♣ 0</span>
+          </div>
+        </aside>
+        <div class="player-zone">
+          <div
+            class="player-hand"
+            id="player-hand"
+            aria-label="Ваши карты"
+          ></div>
+          <div class="seat-label player-seat">
+            <span class="seat-avatar player-avatar" aria-hidden="true">♧</span>
+            <div>
+              <strong>Вы</strong><span id="player-status">Ваш ход</span>
+            </div>
+            <span class="dealer-badge" id="player-dealer" hidden>Сдаёте</span
+            ><span
+              class="turn-dot"
+              id="player-turn-dot"
+              hidden
+              aria-label="Ваш ход"
+            ></span>
+          </div>
+        </div>
+        <div class="board-round-note" id="board-round-note"></div>
+      </section>
+      <div class="action-bar">
+        <div class="move-description">
+          <span class="move-indicator" id="move-indicator" aria-hidden="true"
+            >→</span
+          >
+          <div>
+            <strong id="move-title">Ваш ход</strong>
+            <p id="move-detail">Выберите карту на руке</p>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button
+            class="secondary-button hint-button"
+            id="hint-button"
+            disabled
+          >
+            <span aria-hidden="true">✧</span> Подсказка</button
+          ><button class="primary-button play-button" id="play-button" disabled>
+            Выберите карту <span aria-hidden="true">→</span></button
+          ><button class="primary-button" id="show-result-button" hidden>
+            Итоги кона <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+      <details class="game-log" id="game-log">
+        <summary>
+          Ход игры <span id="last-log"></span
+          ><span class="log-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <ol id="log-list"></ol>
+      </details>
+      <p class="game-footnote">
+        Туз = 1 · Картинки берут свой ранг · За ход — одна комбинация
+      </p>
+    </main>
+
+    <dialog
+      class="rules-dialog"
+      id="rules-dialog"
+      aria-labelledby="rules-title"
+    >
+      <button
+        class="dialog-close"
+        data-close="rules-dialog"
+        aria-label="Закрыть правила"
+      >
+        ×
+      </button>
+      <p class="eyebrow">За столом всё просто</p>
+      <h2 id="rules-title">Как играть в «Лист»</h2>
+      <div class="rules-grid">
+        <section>
+          <span class="rule-number">01</span>
+          <h3>Четыре карты. Ваш ход.</h3>
+          <p>
+            В колоде 52 карты. В начале кона каждый получает по 4, ещё 4 лежат
+            открытыми на столе. Первым ходит тот, кто не сдавал. Сдатчик
+            меняется каждый кон.
+          </p>
+        </section>
+        <section>
+          <span class="rule-number">02</span>
+          <h3>Соберите свою комбинацию</h3>
+          <p>
+            Выберите карту на руке и одну комбинацию на столе с той же суммой.
+            Туз стоит 1, числа — по номиналу. Валет, дама и король берут одну
+            карту своего ранга.
+          </p>
+          <div class="rules-example">
+            <span>10♦</span><b>=</b><span>7♣</span><b>+</b><span>2♥</span
+            ><b>+</b><span>Т♠</span>
+          </div>
+        </section>
+        <section>
+          <span class="rule-number">03</span>
+          <h3>Забирайте или выкладывайте</h3>
+          <p>
+            Если выбранной картой можно взять взятку, взять её обязательно.
+            Комбинацию выбираете вы. Если взятки нет, выложите эту карту на
+            стол. При этом можно выбрать другую карту без взятки.
+          </p>
+        </section>
+        <section>
+          <span class="rule-number">04</span>
+          <h3>Больше взяток — ближе победа</h3>
+          <p>
+            Когда обе руки пусты, каждый снова получает по 4 карты. После
+            окончания колоды остаток стола получает последний взявший взятку;
+            если взяток не было — сдатчик.
+          </p>
+        </section>
+      </div>
+      <div class="rules-scoring">
+        <h3>Считаем очки после кона</h3>
+        <p>
+          Больше карт — <strong>2</strong>; больше треф — <strong>1</strong>;
+          двойка треф — <strong>1</strong>; десятка бубен — <strong>1</strong>.
+          При 26 картах у каждого — по 1 очку. При равенстве треф очко за них не
+          начисляется. Очков за «чистый стол» нет.
+        </p>
+        <p>
+          Матч идёт до <strong>21 очка</strong>. Если после кона оба достигли
+          цели с равным счётом, играем ещё кон. Побеждает тот, у кого больше
+          очков.
+        </p>
+      </div>
+      <button class="primary-button rules-done" data-close="rules-dialog">
+        Всё понятно <span aria-hidden="true">✓</span>
+      </button>
+    </dialog>
+    <dialog
+      class="result-dialog"
+      id="result-dialog"
+      aria-labelledby="result-title"
+    >
+      <button
+        class="dialog-close"
+        data-close="result-dialog"
+        aria-label="Вернуться к столу"
+      >
+        ×
+      </button>
+      <div class="result-symbol" id="result-symbol" aria-hidden="true">✦</div>
+      <p class="eyebrow" id="result-eyebrow">Кон завершён</p>
+      <h2 id="result-title">Считаем очки</h2>
+      <p class="result-description" id="result-description"></p>
+      <div class="result-total">
+        <div>
+          <span>Вы</span><strong id="result-player-total">0</strong
+          ><small id="result-player-gain">+0 за кон</small>
+        </div>
+        <span class="result-colon">:</span>
+        <div>
+          <span>Бот</span><strong id="result-bot-total">0</strong
+          ><small id="result-bot-gain">+0 за кон</small>
+        </div>
+      </div>
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th>Очки за кон</th>
+            <th>Вы</th>
+            <th>Бот</th>
+          </tr>
+        </thead>
+        <tbody id="result-rows"></tbody>
+      </table>
+      <p class="result-remainder" id="result-remainder"></p>
+      <div class="result-actions">
+        <button class="primary-button" id="next-round-button">
+          Следующий кон <span aria-hidden="true">→</span></button
+        ><button class="primary-button" id="new-match-button" hidden>
+          Сыграть ещё <span aria-hidden="true">→</span></button
+        ><button class="secondary-button" id="result-lobby-button">
+          В лобби
+        </button>
+      </div>
+    </dialog>
+    <dialog
+      class="confirm-dialog"
+      id="confirm-dialog"
+      aria-labelledby="confirm-title"
+    >
+      <span class="confirm-symbol" aria-hidden="true">↻</span>
+      <h2 id="confirm-title">Начать заново?</h2>
+      <p>
+        Текущая партия ещё идёт. Новая игра заменит её, и накопленные очки этой
+        партии будут потеряны.
+      </p>
+      <div class="confirm-actions">
+        <button class="secondary-button" id="cancel-new-button">
+          Продолжить партию</button
+        ><button class="primary-button" id="confirm-new-button">
+          Новая игра
+        </button>
+      </div>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+      <span id="toast-message"></span
+      ><button id="toast-retry" hidden>Повторить</button
+      ><button id="toast-close" aria-label="Закрыть уведомление">×</button>
+    </div>
+    <div
+      class="sr-only"
+      id="announcements"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+    <div class="motion-layer" id="motion-layer" aria-hidden="true"></div>
+    <noscript
+      ><div class="noscript-message">
+        Для игры включите JavaScript в браузере.
+      </div></noscript
+    >
+  </body>
+</html>
